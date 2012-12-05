@@ -5,6 +5,7 @@ from base import AI
 
 class Kelvin(AI):
     def pulse(self):
-        raise Exception('lol')
+        # raise Exception('lol')
+        pass
 
 kelvin = Kelvin()

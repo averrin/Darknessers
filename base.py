@@ -16,14 +16,7 @@ class AI(WinterObject, QObject):
 
     @property
     def speed(self):
-        return self._speed
-
-    @speed.setter
-    def speed(self, value):
-        if self.__skillpoints >= (value - self._speed):
-            self.__skillpoints -= (value - self._speed)
-            self._speed = value
-
+        return self.api.getStats(self, 'speed')
 
     def init(self):
         pass
@@ -80,6 +73,7 @@ class World(WinterObject):
             print('Generate world for %s' % ai)
         else:
             print('Generate global world')
+            self.stats = {}
 
 
 class Stream(QThread):
@@ -88,7 +82,7 @@ class Stream(QThread):
         self.__stop = False
         self.ai = ai
         self.pool = []
-        self.speed = 20
+        self.speed = 40
 
     def run(self):
         while not self.__stop:
@@ -110,7 +104,7 @@ class Event(QThread):
         self.do = do
 
     def run(self):
-        try:
-            self.do()
-        except:
-            pass
+        # try:
+        self.do()
+        # except:
+            # pass

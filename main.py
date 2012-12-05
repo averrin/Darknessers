@@ -12,9 +12,10 @@ from winterstone.snowflake import loadIcons
 
 
 class API(WinterAPI):
-    def __init__(self, scene):
+    def __init__(self, scene, world):
         WinterAPI.__init__(self)
         self.__scene = scene
+        self.__world = world
 
     def drawPoint(self, x, y, color='red', r=2):
         return self.__scene.addEllipse(QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))), QPen(QColor(color)))
@@ -24,6 +25,14 @@ class API(WinterAPI):
         l.setPen(QPen(QColor(color)))
         self.__scene.addItem(l)
         return l
+
+    def getStats(self, who, stat):
+        return self.__world.stats[who][stat]
+
+    def addStats(self, who, stat):
+        if self.__world.stats[who]['skillpoints'] > 0:
+            self.__world.stats[who]['skillpoints'] -= 1
+            self.__world.stats[who][stat] += 1
 
 
 class UI(QMainWindow):
@@ -42,9 +51,6 @@ class UI(QMainWindow):
 
         self.setCentralWidget(widget)
 
-        self.api = API(scene)
-        self.api.addIconsFolder('static')
-        self.api.addIconsFolder('static/emblems')
 
         self.drawDots()
         self.loadAI()
@@ -53,8 +59,13 @@ class UI(QMainWindow):
         self.stream.start()
         self.world = World()
 
+        self.api = API(scene, self.world)
+        self.api.addIconsFolder('static')
+        self.api.addIconsFolder('static/emblems')
+
         for ai in self.ai:
             ai.world = World(ai)
+            self.world.stats[ai] = {'speed': 20, 'skillpoints': 5}
             ai.world.stream = self.stream
             ai.api = self.api
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))

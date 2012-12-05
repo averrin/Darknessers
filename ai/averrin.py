@@ -14,9 +14,7 @@ class Averrin(AI):
             self.go(100, 0)
             time.sleep(0.3)
             self.stop()  # for after_go callback
-            self.__skillpoints = 55
-            self.speed += 5
-            self._speed += 5
+            self.api.addStats(self, 'speed')
             self.go(0, 0).wait()
             self.go(0, 100).wait()
 
