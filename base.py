@@ -1,6 +1,7 @@
 from winterstone.base import *
 import time
 from PyQt4.QtCore import *
+Slot = pyqtSlot
 
 
 class AI(WinterObject, QObject):
@@ -8,6 +9,9 @@ class AI(WinterObject, QObject):
     def __init__(self):
         WinterObject.__init__(self)
         QObject.__init__(self)
+        self.busy = False
+        self.speed = 10
+        self.stop = False
 
     def init(self):
         pass
@@ -16,28 +20,38 @@ class AI(WinterObject, QObject):
         pass
 
     def go(self, x, y):
-        self.speed = 40
-        self.ev = self.world.stream.addEvent(self._go(x, y))
-        self.connect(self.ev, SIGNAL('moved(QPointF)'), self.move)
+        if not self.busy:
+            self.ev = self.world.stream.addEvent(lambda: self._go(x, y))
+            # print 'start', self.ev
+            return self.ev
+        else:
+            pass
+            # print 'busy'
+        # self.connect(self.ev, SIGNAL('moved(QPointF)'), self.move)
 
     def _go(self, x, y):
-        start = self.object.pos()
+        print self
+        self.busy = True
+        start = self.pos
         end = QPointF(x, y)
         l = QLineF(start, end).length()
         for c in range(0, int(l), 3):
             if self.stop:
                 break
-            time.sleep(1 / self.speed)
+            time.sleep(0.05)
             t = c / l
             x = start.x() + (end.x() - start.x()) * t
             y = start.y() + (end.y() - start.y()) * t
             p = QPointF(x, y)
 
             self.emit(SIGNAL('moved(QPointF)'), p)
+        self.busy = False
+        self.pos = end
 
-    @Slot(QPointF)
-    def move(self, pos):
-        self.object.setPos(pos)
+    # @Slot(QPointF)
+    # def move(self, pos):
+    #     print pos
+    #     self.object.setPos(pos)
 
 
 class World(Borg):

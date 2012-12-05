@@ -44,8 +44,14 @@ class UI(QMainWindow):
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
             em.setOffset((qrand() % 50) * (qrand() % 2), (qrand() % 50) * (qrand() % 2))
             ai.object = em
+            ai.pos = em.pos()
             self.scene.addItem(em)
+            self.connect(ai, SIGNAL('moved(QPointF)'), lambda x: self.moveEm(em, x))
             self.stream.addEvent(ai.init)
+
+    def moveEm(self, em, pos):
+        # print(pos)
+        em.setPos(pos)
 
     def drawDots(self):
         tl = QPoint(-300, -300)
