@@ -9,7 +9,6 @@ class Averrin(AI):
         pass
 
     def init(self):
-        print self.api._scene
         while True:
             self.go(100, 100).wait()
             self.go(100, 0)

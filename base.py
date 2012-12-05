@@ -11,7 +11,7 @@ class AI(WinterObject, QObject):
         QObject.__init__(self)
         self.mover = False
         self.speed = 20
-        self._stop = False
+        self.__stop = False
 
     def init(self):
         pass
@@ -27,28 +27,25 @@ class AI(WinterObject, QObject):
 
     def go(self, x, y):
         self.before_go(x, y)
-        print(self.pos)
         if not self.mover:
-            self.mover = self.world.stream.addEvent(lambda: self._go(x, y))
+            self.mover = self.world.stream.addEvent(lambda: self.__go(x, y))
             return self.mover
         else:
             self.stop()
             return self.go(x, y)
 
     def stop(self):
-        self._stop = True
+        self.__stop = True
         if self.mover:
             self.mover.wait()
 
-    def _go(self, x, y):
-        print('Start mover', self)
+    def __go(self, x, y):
         start = self.pos
         end = QPointF(x, y)
         l = QLineF(start, end).length()
         p = QPointF(x, y)
         for c in range(0, int(l), 3):
-            if self._stop:
-                print('Stop mover', self)
+            if self.__stop:
                 break
             time.sleep(1 / float(self.speed))
             t = c / l
@@ -57,27 +54,32 @@ class AI(WinterObject, QObject):
             p = QPointF(x, y)
 
             self.emit(SIGNAL('moved(QPointF)'), p)
-        self._stop = False
+        self.__stop = False
         self.pos = p
         self.mover = False
         self.after_go(p.x(), p.y())
 
 
-
-class World(Borg):
-    pass
+class World(WinterObject):
+    def __init__(self, ai=''):
+        WinterObject.__init__(self)
+        if ai:
+            self.ai = ai
+            print('Generate world for %s' % ai)
+        else:
+            print('Generate global world')
 
 
 class Stream(QThread):
     def __init__(self, ai):
         QThread.__init__(self)
-        self.stop = False
+        self.__stop = False
         self.ai = ai
         self.pool = []
         self.speed = 20
 
     def run(self):
-        while not self.stop:
+        while not self.__stop:
             for ai in self.ai:
                 self.addEvent(ai.pulse)
             time.sleep(1 / float(self.speed))
@@ -96,4 +98,7 @@ class Event(QThread):
         self.do = do
 
     def run(self):
-        self.do()
+        try:
+            self.do()
+        except:
+            pass

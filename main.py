@@ -14,15 +14,15 @@ from winterstone.snowflake import loadIcons
 class API(WinterAPI):
     def __init__(self, scene):
         WinterAPI.__init__(self)
-        self._scene = scene
+        self.__scene = scene
 
     def drawPoint(self, x, y, color='red', r=2):
-        return self._scene.addEllipse(QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))), QPen(QColor(color)))
+        return self.__scene.addEllipse(QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))), QPen(QColor(color)))
 
     def drawLine(self, x, y, x1, y1, color='blue'):
         l = QGraphicsLineItem(QLineF(QPointF(x, y), QPointF(x1, y1)))
         l.setPen(QPen(QColor(color)))
-        self._scene.addItem(l)
+        self.__scene.addItem(l)
         return l
 
 
@@ -51,9 +51,10 @@ class UI(QMainWindow):
         print(AI.objects.all())
         self.stream = Stream(self.ai)
         self.stream.start()
+        self.world = World()
 
         for ai in self.ai:
-            ai.world = World()
+            ai.world = World(ai)
             ai.world.stream = self.stream
             ai.api = self.api
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
