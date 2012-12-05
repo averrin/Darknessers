@@ -30,7 +30,7 @@ class UI(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        self.setWindowTitle(u"Darknessers")
+        self.setWindowTitle("Darknessers")
         self.setWindowIcon(QIcon('static/bulb.png'))
         self.resize(QSize(800, 600))
 

@@ -17,7 +17,6 @@ class Averrin(AI):
             self.__skillpoints = 55
             self.speed += 5
             self._speed += 5
-            print self.speed, self._speed
             self.go(0, 0).wait()
             self.go(0, 100).wait()
 
