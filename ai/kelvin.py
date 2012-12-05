@@ -3,8 +3,8 @@ sys.path.append('..')
 from base import AI
 
 
-class Averrin(AI):
+class Kelvin(AI):
     def pulse(self):
-        print 'averrin'
+        print 'kelvin'
 
-averrin = Averrin()
+kelvin = Kelvin()
