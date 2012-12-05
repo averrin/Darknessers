@@ -7,8 +7,9 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from winterstone.base import *
 from loader import Loader
-from base import AI, World, Stream
+from base import AI, World, Stream, Barrier
 from winterstone.snowflake import loadIcons
+from random import randint
 
 
 class API(WinterAPI):
@@ -58,24 +59,33 @@ class UI(QMainWindow):
         self.stream = Stream(self.ai)
         self.stream.start()
         self.world = World()
+        self.world.ai = self.ai
 
         self.api = API(scene, self.world)
         self.api.addIconsFolder('static')
         self.api.addIconsFolder('static/emblems')
 
         for ai in self.ai:
-            ai.world = World(ai)
+            ai.world = World(ai, self.world)
             self.world.stats[ai] = {'speed': 20, 'skillpoints': 5}
             ai.world.stream = self.stream
             ai.api = self.api
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
-            em.setPos((qrand() % 50) * (qrand() % 2), (qrand() % 50) * (qrand() % 2))
+            em.setPos(randint(-50, 50), randint(-50, 50))
             em.setOffset(-10, -10)
             ai.object = em
             ai.pos = em.pos()
             self.scene.addItem(em)
             self.connect(ai, SIGNAL('moved(QPointF)'), lambda x: self.moveEm(em, x))
             self.stream.addEvent(ai.init)
+
+        proto = QPolygonF([QPointF(0, 0), QPointF(0, 50), QPointF(50, 50), QPointF(50, 0)])
+        for i in range(0, 5):
+            b = Barrier(proto)
+            self.world.barriers.append(b)
+            item = self.scene.addPolygon(b)
+            item.setBrush(QBrush(QColor('black')))
+            item.setPos(randint(-300, 300), randint(-300, 300))
 
     def moveEm(self, em, pos):
         em.setPos(pos)

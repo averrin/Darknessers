@@ -1,6 +1,7 @@
 from winterstone.base import *
 import time
 from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 Slot = pyqtSlot
 
 
@@ -65,15 +66,22 @@ class AI(WinterObject, QObject):
         self.after_go(p.x(), p.y())
 
 
+class Barrier(QPolygonF):
+    pass
+
+
 class World(WinterObject):
-    def __init__(self, ai=''):
+    def __init__(self, ai='', original=''):
         WinterObject.__init__(self)
         if ai:
             self.ai = ai
+            self.__original = original
             print('Generate world for %s' % ai)
         else:
             print('Generate global world')
             self.stats = {}
+            self.ai = []
+            self.barriers = []
 
 
 class Stream(QThread):
