@@ -13,7 +13,7 @@ class AI(WinterObject, QObject):
         self.mover = False
         self.__skillpoints = 0
         self._speed = 20
-        self.__stop = False
+        self.stopMove = False
 
     @property
     def speed(self):
@@ -34,36 +34,16 @@ class AI(WinterObject, QObject):
     def go(self, x, y):
         self.before_go(x, y)
         if not self.mover:
-            self.mover = self.world.stream.addEvent(lambda: self.__go(x, y))
+            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(self, x, y))
             return self.mover
         else:
             self.stop()
             return self.go(x, y)
 
     def stop(self):
-        self.__stop = True
+        self.stopMove = True
         if self.mover:
             self.mover.wait()
-
-    def __go(self, x, y):
-        start = self.pos
-        end = QPointF(x, y)
-        l = QLineF(start, end).length()
-        p = QPointF(x, y)
-        for c in range(0, int(l), 3):
-            if self.__stop:
-                break
-            time.sleep(1 / float(self.speed))
-            t = c / l
-            x = start.x() + (end.x() - start.x()) * t
-            y = start.y() + (end.y() - start.y()) * t
-            p = QPointF(x, y)
-
-            self.emit(SIGNAL('moved(QPointF)'), p)
-        self.__stop = False
-        self.pos = p
-        self.mover = False
-        self.after_go(p.x(), p.y())
 
 
 class Barrier(QPolygonF):
@@ -82,6 +62,30 @@ class World(WinterObject):
             self.stats = {}
             self.ai = []
             self.barriers = []
+            self.__original = self
+
+    def getBarriers(self):
+        return self.__original.barriers
+
+    def moveMe(self, obj, x, y):
+        start = obj.pos
+        end = QPointF(x, y)
+        l = QLineF(start, end).length()
+        p = QPointF(x, y)
+        for c in range(0, int(l), 3):
+            if obj.stopMove:
+                break
+            time.sleep(1 / float(obj.speed))
+            t = c / l
+            x = start.x() + (end.x() - start.x()) * t
+            y = start.y() + (end.y() - start.y()) * t
+            p = QPointF(x, y)
+
+            obj.emit(SIGNAL('moved(QPointF)'), p)
+        obj.stopMove = False
+        obj.pos = p
+        obj.mover = False
+        obj.after_go(p.x(), p.y())
 
 
 class Stream(QThread):

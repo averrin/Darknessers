@@ -52,7 +52,6 @@ class UI(QMainWindow):
 
         self.setCentralWidget(widget)
 
-
         self.drawDots()
         self.loadAI()
         print(AI.objects.all())
@@ -65,6 +64,11 @@ class UI(QMainWindow):
         self.api.addIconsFolder('static')
         self.api.addIconsFolder('static/emblems')
 
+        self.initWorld()
+
+        self.initAI()
+
+    def initAI(self):
         for ai in self.ai:
             ai.world = World(ai, self.world)
             self.world.stats[ai] = {'speed': 20, 'skillpoints': 5}
@@ -79,6 +83,7 @@ class UI(QMainWindow):
             self.connect(ai, SIGNAL('moved(QPointF)'), lambda x: self.moveEm(em, x))
             self.stream.addEvent(ai.init)
 
+    def initWorld(self):
         proto = QPolygonF([QPointF(0, 0), QPointF(0, 50), QPointF(50, 50), QPointF(50, 0)])
         for i in range(0, 5):
             b = Barrier(proto)

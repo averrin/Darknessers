@@ -9,6 +9,7 @@ class Averrin(AI):
         pass
 
     def init(self):
+        print(self.world.getBarriers())
         while True:
             self.go(100, 100).wait()
             self.go(100, 0)
