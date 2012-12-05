@@ -9,9 +9,9 @@ class AI(WinterObject, QObject):
     def __init__(self):
         WinterObject.__init__(self)
         QObject.__init__(self)
-        self.busy = False
-        self.speed = 10
-        self.stop = False
+        self.mover = False
+        self.speed = 20
+        self._stop = False
 
     def init(self):
         pass
@@ -19,39 +19,49 @@ class AI(WinterObject, QObject):
     def pulse(self):
         pass
 
+    def before_go(self, x, y):
+        pass
+
+    def after_go(self, x, y):
+        pass
+
     def go(self, x, y):
-        if not self.busy:
-            self.ev = self.world.stream.addEvent(lambda: self._go(x, y))
-            # print 'start', self.ev
-            return self.ev
+        self.before_go(x, y)
+        print(self.pos)
+        if not self.mover:
+            self.mover = self.world.stream.addEvent(lambda: self._go(x, y))
+            return self.mover
         else:
-            pass
-            # print 'busy'
-        # self.connect(self.ev, SIGNAL('moved(QPointF)'), self.move)
+            self.stop()
+            return self.go(x, y)
+
+    def stop(self):
+        self._stop = True
+        if self.mover:
+            self.mover.wait()
 
     def _go(self, x, y):
-        print self
-        self.busy = True
+        print('Start mover', self)
         start = self.pos
         end = QPointF(x, y)
         l = QLineF(start, end).length()
+        p = QPointF(x, y)
         for c in range(0, int(l), 3):
-            if self.stop:
+            if self._stop:
+                print('Stop mover', self)
                 break
-            time.sleep(0.05)
+            time.sleep(1 / float(self.speed))
             t = c / l
             x = start.x() + (end.x() - start.x()) * t
             y = start.y() + (end.y() - start.y()) * t
             p = QPointF(x, y)
 
             self.emit(SIGNAL('moved(QPointF)'), p)
-        self.busy = False
-        self.pos = end
+        self._stop = False
+        self.pos = p
+        self.mover = False
+        self.after_go(p.x(), p.y())
 
-    # @Slot(QPointF)
-    # def move(self, pos):
-    #     print pos
-    #     self.object.setPos(pos)
 
 
 class World(Borg):
@@ -64,13 +74,13 @@ class Stream(QThread):
         self.stop = False
         self.ai = ai
         self.pool = []
-        self.speed = 40
+        self.speed = 20
 
     def run(self):
         while not self.stop:
             for ai in self.ai:
                 self.addEvent(ai.pulse)
-            time.sleep(1 / self.speed)
+            time.sleep(1 / float(self.speed))
 
     def addEvent(self, do):
         ev = Event(do)
