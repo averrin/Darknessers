@@ -11,7 +11,20 @@ class AI(WinterObject, QObject):
         QObject.__init__(self)
         self.mover = False
         self.speed = 20
+        self.skillpoints = 0
         self.__stop = False
+
+    def speed():
+        def fget(self):
+            return self._speed
+
+        def fset(self, value):
+            if self.skillpoints >= value:
+                self.skillpoints -= value
+                self._speed += value
+        return locals()
+
+    speed = property(**speed())
 
     def init(self):
         pass

@@ -64,6 +64,7 @@ class UI(QMainWindow):
             ai.pos = em.pos()
             self.scene.addItem(em)
             self.connect(ai, SIGNAL('moved(QPointF)'), lambda x: self.moveEm(em, x))
+            ai.skillpoints = 5
             self.stream.addEvent(ai.init)
 
     def moveEm(self, em, pos):
