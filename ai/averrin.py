@@ -5,6 +5,9 @@ from base import AI
 
 class Averrin(AI):
     def pulse(self):
-        print 'averrin'
+        pass
+
+    def init(self):
+        self.go(100, 100)
 
 averrin = Averrin()

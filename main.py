@@ -39,10 +39,13 @@ class UI(QMainWindow):
 
         for ai in self.ai:
             ai.world = World()
+            ai.world.stream = self.stream
             ai.api = self.api
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
             em.setOffset((qrand() % 50) * (qrand() % 2), (qrand() % 50) * (qrand() % 2))
+            ai.object = em
             self.scene.addItem(em)
+            self.stream.addEvent(ai.init)
 
     def drawDots(self):
         tl = QPoint(-300, -300)

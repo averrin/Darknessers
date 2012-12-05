@@ -5,6 +5,6 @@ from base import AI
 
 class Kelvin(AI):
     def pulse(self):
-        print 'kelvin'
+        pass
 
 kelvin = Kelvin()
