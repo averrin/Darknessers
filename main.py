@@ -48,39 +48,56 @@ class UI(QMainWindow):
         self.scene = scene
 
         widget = QGraphicsView()
+        # restart = QPushButton('Restart')
+        # restart.clicked.connect(self.start)
+        # widget.setLayout(QHBoxLayout())
+        # widget.layout().addWidget(restart)
         widget.setScene(scene)
 
         self.setCentralWidget(widget)
 
+        self.start()
+
+    def start(self):
+        self.scene.clear()
         self.drawDots()
         self.loadAI()
-        print(AI.objects.all())
         self.stream = Stream(self.ai)
         self.stream.start()
         self.world = World()
         self.world.ai = self.ai
-
-        self.api = API(scene, self.world)
+        self.initWorld()
+        self.api = API(self.scene, self.world)
         self.api.addIconsFolder('static')
         self.api.addIconsFolder('static/emblems')
-
-        self.initWorld()
-
         self.initAI()
 
     def initAI(self):
         for ai in self.ai:
             ai.world = World(ai, self.world)
-            self.world.stats[ai] = {'speed': 20, 'skillpoints': 5}
+            self.world.stats[ai] = {
+                'speed': 20,
+                'skillpoints': 5,
+                'hp': 50,
+                'ac': 10,
+                'light': 50
+            }
             ai.world.stream = self.stream
             ai.api = self.api
             em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
             em.setPos(randint(-50, 50), randint(-50, 50))
             em.setOffset(-10, -10)
             ai.object = em
+            em.ai = ai
             ai.pos = em.pos()
+            lc = self.scene.addEllipse(
+                QRectF(ai.pos + QPointF(ai.lightr, ai.lightr), ai.pos - QPointF(ai.lightr, ai.lightr)),
+                QPen(QColor('yellow')),
+                QBrush(QColor('yellow')))
+            lc.setZValue(-50)
+            em.lc = lc
             self.scene.addItem(em)
-            self.connect(ai, SIGNAL('moved(QPointF)'), lambda x: self.moveEm(em, x))
+            self.connect(ai, SIGNAL('moved'), self.moveEm)
             self.stream.addEvent(ai.init)
 
     def initWorld(self):
@@ -91,16 +108,11 @@ class UI(QMainWindow):
             self.world.barriers.append(b)
             item = self.scene.addPolygon(b)
             item.setBrush(QBrush(QColor('black')))
-            # item.setPos(randint(-300, 300), randint(-300, 300))
 
-        b = Barrier(QPolygonF([QPointF(50, 50), QPointF(100, 50), QPointF(100, 200), QPointF(50, 200)]))
-        self.world.barriers.append(b)
-        item = self.scene.addPolygon(b)
-        item.setBrush(QBrush(QColor('black')))
-        # item.setPos(50, 50)
-
-    def moveEm(self, em, pos):
-        em.setPos(pos)
+    def moveEm(self, ai):
+        ai.object.setPos(ai.pos)
+        ai.object.lc.setPos(ai.pos)
+        self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):
         tl = QPoint(-300, -300)

@@ -19,6 +19,10 @@ class AI(WinterObject, QObject):
     def speed(self):
         return self.api.getStats(self, 'speed')
 
+    @property
+    def lightr(self):
+        return self.api.getStats(self, 'light')
+
     def init(self):
         pass
 
@@ -37,7 +41,7 @@ class AI(WinterObject, QObject):
     def go(self, x, y):
         self.before_go(x, y)
         if not self.mover:
-            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(self, x, y))
+            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(x, y))
             return self.mover
         else:
             self.stop()
@@ -68,35 +72,41 @@ class World(WinterObject):
             self.__original = self
 
     def getBarriers(self):
-        return self.__original.barriers
+        return self.__original.barriers  # TODO: visibility
 
-    def moveMe(self, obj, x, y):
-        start = obj.pos
-        end = QPointF(x, y)
-        l = QLineF(start, end).length()
-        p = QPointF(x, y)
-        clear = True
-        for c in range(0, int(l), 3):
-            if obj.stopMove or not clear:
-                break
-            time.sleep(1 / float(obj.speed))
-            t = c / l
-            x = start.x() + (end.x() - start.x()) * t
-            y = start.y() + (end.y() - start.y()) * t
+    def getAI(self):
+        ai = self.__original.ai[:]
+        ai.remove(self.ai)
+        return ai  # TODO: visibility, mock object without control
+
+    def moveMe(self, x, y):
+        if isinstance(self.ai, AI):
+            start = self.ai.pos
+            end = QPointF(x, y)
+            l = QLineF(start, end).length()
             p = QPointF(x, y)
-            for b in self.__original.barriers:
-                # print(b, p, b.contains(p), b.containsPoint(p, Qt.WindingFill))
-                if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
-                    obj.collision_go(x, y)
-                    obj.stopMove = True
-                    clear = False
-                    # break
-            if clear:
-                obj.pos = QPointF(x, y)
-                obj.emit(SIGNAL('moved(QPointF)'), p)
-        obj.stopMove = False
-        obj.mover = False
-        obj.after_go(p.x(), p.y())
+            clear = True
+            for c in range(0, int(l), 3):
+                if self.ai.stopMove or not clear:
+                    break
+                time.sleep(1 / float(self.ai.speed))
+                t = c / l
+                x = start.x() + (end.x() - start.x()) * t
+                y = start.y() + (end.y() - start.y()) * t
+                p = QPointF(x, y)
+                for b in self.__original.barriers:
+                    # print(b, p, b.contains(p), b.containsPoint(p, Qt.WindingFill))
+                    if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
+                        self.ai.collision_go(x, y)
+                        self.ai.stopMove = True
+                        clear = False
+                        # break
+                if clear:
+                    self.ai.pos = QPointF(x, y)
+                    self.ai.emit(SIGNAL('moved'), self.ai)
+            self.ai.stopMove = False
+            self.ai.mover = False
+            self.ai.after_go(p.x(), p.y())
 
 
 class Stream(QThread):
@@ -120,6 +130,7 @@ class Stream(QThread):
         ev = Event(do)
         self.pool.append(ev)
         ev.start()
+        # QThreadPool.globalInstance().start(ev)
         return ev
 
 
