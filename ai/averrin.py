@@ -10,18 +10,23 @@ class Averrin(AI):
     def pulse(self):
         if hasattr(self, 'world'):
             partner = self.world.getAI()
-            if partner and hasattr(partner[0], 'pos'):
-                p = partner[0].pos
+            self.api.drawPoint(self.pos.x(), self.pos.y(), color="green")
+            if partner:
+                p = partner[0]
                 if QLineF(p, self.pos).length() < QLineF(self.waypoint, self.pos).length():
                     self.stop()
 
     def init(self):
+        self.waypoint = self.pos
         print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
         while True:
             partner = self.world.getAI()
             if partner:
-                self.waypoint = QPointF(partner[0].pos.x(), partner[0].pos.y())
-                self.go(partner[0].pos.x(), partner[0].pos.y()).wait()
+                self.waypoint = QPointF(partner[0].x(), partner[0].y())
+                self.go(partner[0].x(), partner[0].y()).wait()
+            else:
+                self.waypoint = QPointF(randint(-300, 300), randint(-300, 300))
+                self.go(self.waypoint.x(), self.waypoint.y()).wait()
 
     def before_go(self, x, y):
         self.target = self.api.drawPoint(x, y)

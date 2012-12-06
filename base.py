@@ -79,7 +79,7 @@ class World(WinterObject):
         if hasattr(self.ai, 'pos'):
             for ai in self.__original.ai:
                 if ai is not self.ai and hasattr(ai, 'pos') and QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr + ai.lightr / 2):
-                    ret.append(ai)
+                    ret.append(ai.pos)
         return ret  # TODO: visibility, mock object without control
 
     def moveMe(self, x, y):
