@@ -31,6 +31,9 @@ class AI(WinterObject, QObject):
     def after_go(self, x, y):
         pass
 
+    def collision_go(self, x, y):
+        pass
+
     def go(self, x, y):
         self.before_go(x, y)
         if not self.mover:
@@ -83,14 +86,13 @@ class World(WinterObject):
             p = QPointF(x, y)
             for b in self.__original.barriers:
                 # print(b, p, b.contains(p), b.containsPoint(p, Qt.WindingFill))
-                if b.containsPoint(p, Qt.WindingFill):
-                    obj.api.drawPoint(x, y)
+                if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
+                    obj.collision_go(x, y)
                     obj.stopMove = True
                     clear = False
                     # break
             if clear:
                 obj.pos = QPointF(x, y)
-                obj.api.drawPoint(x, y, color="green")
                 obj.emit(SIGNAL('moved(QPointF)'), p)
         obj.stopMove = False
         obj.mover = False
@@ -109,6 +111,9 @@ class Stream(QThread):
         while not self.__stop:
             for ai in self.ai:
                 self.addEvent(ai.pulse)
+            for thread in self.pool:
+                if thread.isFinished():
+                    self.pool.remove(thread)
             time.sleep(1 / float(self.speed))
 
     def addEvent(self, do):

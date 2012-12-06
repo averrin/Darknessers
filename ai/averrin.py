@@ -2,6 +2,7 @@ import sys
 sys.path.append('..')
 from base import AI
 import time
+from random import randint
 
 
 class Averrin(AI):
@@ -9,15 +10,9 @@ class Averrin(AI):
         pass
 
     def init(self):
-        print(self.world.getBarriers())
+        print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count() - 1)], self.world.getBarriers()))
         while True:
-            self.go(100, 100).wait()
-            self.go(100, 0)
-            time.sleep(0.3)
-            self.stop()  # for after_go callback
-            self.api.addStats(self, 'speed')
-            self.go(0, 0).wait()
-            self.go(0, 100).wait()
+            self.go(randint(-300, 300), randint(-300, 300)).wait()
 
     def before_go(self, x, y):
         self.target = self.api.drawPoint(x, y)
@@ -26,5 +21,8 @@ class Averrin(AI):
     def after_go(self, x, y):
         self.target.hide()
         self.path.hide()
+
+    def collision_go(self, x, y):
+        self.api.drawPoint(x, y)
 
 averrin = Averrin()
