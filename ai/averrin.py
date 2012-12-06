@@ -3,17 +3,24 @@ sys.path.append('..')
 from base import AI
 import time
 from random import randint
+from PyQt4.QtCore import *
 
 
 class Averrin(AI):
     def pulse(self):
-        pass
+        partner = self.world.getAI()
+        if partner:
+            p = partner[0].pos
+            if QLineF(p, self.pos).length() < QLineF(self.waypoint, self.pos).length():
+                self.stop()
 
     def init(self):
         print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
         while True:
             partner = self.world.getAI()
-            self.go(partner[0].pos.x(), partner[0].pos.y()).wait()
+            if partner:
+                self.waypoint = QPointF(partner[0].pos.x(), partner[0].pos.y())
+                self.go(partner[0].pos.x(), partner[0].pos.y()).wait()
 
     # def before_go(self, x, y):
     #     self.target = self.api.drawPoint(x, y)

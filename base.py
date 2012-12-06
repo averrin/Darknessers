@@ -75,9 +75,11 @@ class World(WinterObject):
         return self.__original.barriers  # TODO: visibility
 
     def getAI(self):
-        ai = self.__original.ai[:]
-        ai.remove(self.ai)
-        return ai  # TODO: visibility, mock object without control
+        ret = []
+        for ai in self.__original.ai:
+            if ai is not self.ai and QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr + ai.lightr / 2):
+                ret.append(ai)
+        return ret  # TODO: visibility, mock object without control
 
     def moveMe(self, x, y):
         if isinstance(self.ai, AI):

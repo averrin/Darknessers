@@ -80,12 +80,12 @@ class UI(QMainWindow):
                 'skillpoints': 5,
                 'hp': 50,
                 'ac': 10,
-                'light': 50
+                'light': 150
             }
             ai.world.stream = self.stream
             ai.api = self.api
             cont = QGraphicsPolygonItem()
-            cont.setPos(randint(-50, 50), randint(-50, 50))
+            cont.setPos(randint(-250, 250), randint(-250, 250))
             ai.object = cont
             cont.ai = ai
             ai.pos = cont.pos()
