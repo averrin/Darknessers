@@ -18,7 +18,6 @@ class Averrin(AI):
 
     def init(self):
         self.waypoint = self.pos
-        print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
         while True:
             partner = self.world.getAI()
             if partner:
