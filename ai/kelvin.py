@@ -15,3 +15,4 @@ class Kelvin(AI):
             self.go(randint(-300, 300), randint(-300, 300)).wait()
 
 kelvin = Kelvin()
+kelvin.color = 'orange'

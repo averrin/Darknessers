@@ -96,7 +96,7 @@ class UI(QMainWindow):
             lc.setBrush(QBrush(yl))
             lc.setZValue(-50)
             cont.lc = lc
-            em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']), cont)
+            em = QGraphicsPixmapItem(QPixmap(self.api.icons[ai.color]), cont)
             em.setZValue(50)
             em.setOffset(-10, -10)
             self.scene.addItem(cont)

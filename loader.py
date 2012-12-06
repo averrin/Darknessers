@@ -17,9 +17,10 @@ class Loader(object):
 
         if self.match_cls:
             for module in _modules:
-                for obj in module.__dict__.values():
-                    if isinstance(obj, self.match_cls):
-                        self.modules.append(obj)
+                if module is not None:
+                    for obj in module.__dict__.values():
+                        if isinstance(obj, self.match_cls):
+                            self.modules.append(obj)
 
     def find_modules(self):
         """Return names of modules in a directory.
@@ -42,4 +43,7 @@ class Loader(object):
     def load_module(self, name):
         """Return a named module found in a given path."""
         (file, pathname, description) = imp.find_module(name, [self.path])
-        return imp.load_module(name, file, pathname, description)
+        try:
+            return imp.load_module(name, file, pathname, description)
+        except:
+            pass

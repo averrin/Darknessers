@@ -11,9 +11,9 @@ class Averrin(AI):
 
     def init(self):
         print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
-        print(map(lambda x: (x.pos.x(), x.pos.y()), self.world.getAI()))
         while True:
-            self.go(randint(-300, 300), randint(-300, 300)).wait()
+            partner = self.world.getAI()
+            self.go(partner[0].pos.x(), partner[0].pos.y()).wait()
 
     # def before_go(self, x, y):
     #     self.target = self.api.drawPoint(x, y)
@@ -27,3 +27,4 @@ class Averrin(AI):
         self.api.drawPoint(x, y)
 
 averrin = Averrin()
+averrin.color = 'violet'
