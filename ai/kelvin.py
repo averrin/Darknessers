@@ -10,6 +10,7 @@ class Kelvin(AI):
         pass
 
     def init(self):
+        pass
         while True:
             self.go(randint(-300, 300), randint(-300, 300)).wait()
 

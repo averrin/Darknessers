@@ -84,19 +84,22 @@ class UI(QMainWindow):
             }
             ai.world.stream = self.stream
             ai.api = self.api
-            em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']))
-            em.setPos(randint(-50, 50), randint(-50, 50))
-            em.setOffset(-10, -10)
-            ai.object = em
-            em.ai = ai
-            ai.pos = em.pos()
-            lc = self.scene.addEllipse(
-                QRectF(ai.pos + QPointF(ai.lightr, ai.lightr), ai.pos - QPointF(ai.lightr, ai.lightr)),
-                QPen(QColor('yellow')),
-                QBrush(QColor('yellow')))
+            cont = QGraphicsPolygonItem()
+            cont.setPos(randint(-50, 50), randint(-50, 50))
+            ai.object = cont
+            cont.ai = ai
+            ai.pos = cont.pos()
+            lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
+            yl = QColor('yellow')
+            yl.setAlpha(100)
+            lc.setPen(QPen(yl))
+            lc.setBrush(QBrush(yl))
             lc.setZValue(-50)
-            em.lc = lc
-            self.scene.addItem(em)
+            cont.lc = lc
+            em = QGraphicsPixmapItem(QPixmap(self.api.icons['pink']), cont)
+            em.setZValue(50)
+            em.setOffset(-10, -10)
+            self.scene.addItem(cont)
             self.connect(ai, SIGNAL('moved'), self.moveEm)
             self.stream.addEvent(ai.init)
 
@@ -111,7 +114,7 @@ class UI(QMainWindow):
 
     def moveEm(self, ai):
         ai.object.setPos(ai.pos)
-        ai.object.lc.setPos(ai.pos)
+        # ai.object.lc.setPos(ai.pos + QPointF(ai.lightr, ai.lightr))
         self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):
