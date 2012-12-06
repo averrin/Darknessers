@@ -32,10 +32,10 @@ class API(WinterAPI):
         self.__scene.addItem(l)
         return l
 
-    def getStats(self, who, stat):
+    def getStats(self, who, stat):  # remove who by personal apis
         return self.__world.stats[who][stat]
 
-    def addStats(self, who, stat):
+    def addStats(self, who, stat):  # remove who by personal apis
         if self.__world.stats[who]['skillpoints'] > 0:
             self.__world.stats[who]['skillpoints'] -= 1
             self.__world.stats[who][stat] += 1
@@ -75,7 +75,7 @@ class UI(QMainWindow):
         self.world = World()  # Main container of objects
         self.world.ai = self.ai
         self.initWorld()  # Init barriers, and other stuff
-        self.api = API(self.scene, self.world)
+        self.api = API(self.scene, self.world)  # TODO: remove singleton, make personal apis
         self.api.addIconsFolder('static')
         self.api.addIconsFolder('static/emblems')
         self.initAI()  # Create AI, place in World
