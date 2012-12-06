@@ -72,18 +72,27 @@ class World(WinterObject):
         end = QPointF(x, y)
         l = QLineF(start, end).length()
         p = QPointF(x, y)
+        clear = True
         for c in range(0, int(l), 3):
-            if obj.stopMove:
+            if obj.stopMove or not clear:
                 break
             time.sleep(1 / float(obj.speed))
             t = c / l
             x = start.x() + (end.x() - start.x()) * t
             y = start.y() + (end.y() - start.y()) * t
             p = QPointF(x, y)
-
-            obj.emit(SIGNAL('moved(QPointF)'), p)
+            for b in self.__original.barriers:
+                # print(b, p, b.contains(p), b.containsPoint(p, Qt.WindingFill))
+                if b.containsPoint(p, Qt.WindingFill):
+                    obj.api.drawPoint(x, y)
+                    obj.stopMove = True
+                    clear = False
+                    # break
+            if clear:
+                obj.pos = QPointF(x, y)
+                obj.api.drawPoint(x, y, color="green")
+                obj.emit(SIGNAL('moved(QPointF)'), p)
         obj.stopMove = False
-        obj.pos = p
         obj.mover = False
         obj.after_go(p.x(), p.y())
 

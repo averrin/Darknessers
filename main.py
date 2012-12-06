@@ -87,10 +87,17 @@ class UI(QMainWindow):
         proto = QPolygonF([QPointF(0, 0), QPointF(0, 50), QPointF(50, 50), QPointF(50, 0)])
         for i in range(0, 5):
             b = Barrier(proto)
+            b.translate(QPointF(randint(-300, 300), randint(-300, 300)))
             self.world.barriers.append(b)
             item = self.scene.addPolygon(b)
             item.setBrush(QBrush(QColor('black')))
-            item.setPos(randint(-300, 300), randint(-300, 300))
+            # item.setPos(randint(-300, 300), randint(-300, 300))
+
+        b = Barrier(QPolygonF([QPointF(50, 50), QPointF(100, 50), QPointF(100, 200), QPointF(50, 200)]))
+        self.world.barriers.append(b)
+        item = self.scene.addPolygon(b)
+        item.setBrush(QBrush(QColor('black')))
+        # item.setPos(50, 50)
 
     def moveEm(self, em, pos):
         em.setPos(pos)
