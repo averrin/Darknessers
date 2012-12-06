@@ -6,6 +6,9 @@ Slot = pyqtSlot
 
 
 class AI(WinterObject, QObject):
+    """
+        Base class for ai
+    """
 
     def __init__(self):
         WinterObject.__init__(self)
@@ -60,22 +63,22 @@ class Barrier(QPolygonF):
 class World(WinterObject):
     def __init__(self, ai='', original=''):
         WinterObject.__init__(self)
-        if ai:
+        if ai:  # Personal world
             self.ai = ai
             self.__original = original
             print('Generate world for %s' % ai)
-        else:
+        else:  # Global world
             print('Generate global world')
             self.stats = {}
             self.ai = []
             self.barriers = []
             self.__original = self
 
-    def getBarriers(self):
+    def getBarriers(self):  # Visible barriers
         return map(lambda x: [x.at(i) for i in range(0, x.count())], self.__original.barriers)
         pass  # TODO: visibility
 
-    def getAI(self):
+    def getAI(self):  # Visible enimies
         ret = []
         if hasattr(self.ai, 'pos'):
             for ai in self.__original.ai:
@@ -83,7 +86,7 @@ class World(WinterObject):
                     ret.append(ai.pos)
         return ret  # TODO: visibility, mock object without control
 
-    def moveMe(self, x, y):
+    def moveMe(self, x, y):  # Move logic
         if isinstance(self.ai, AI):
             start = self.ai.pos
             end = QPointF(x, y)
@@ -124,7 +127,7 @@ class Stream(QThread):
     def run(self):
         while not self.__stop:
             for ai in self.ai:
-                self.addEvent(ai.pulse)
+                self.addEvent(ai.pulse)  # heartbeat
             for thread in self.pool:
                 if thread.isFinished():
                     self.pool.remove(thread)
@@ -138,7 +141,7 @@ class Stream(QThread):
         return ev
 
 
-class Event(QThread):
+class Event(QThread):  # Event on separate thread
     def __init__(self, do):
         QThread.__init__(self)
         self.stop = False

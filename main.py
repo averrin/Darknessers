@@ -11,6 +11,9 @@ from random import randint
 
 
 class API(WinterAPI):
+    """
+        What ai can do with app (draw dots, get stats...)
+    """
     def __init__(self, scene, world):
         WinterAPI.__init__(self)
         self.__scene = scene
@@ -39,6 +42,9 @@ class API(WinterAPI):
 
 
 class UI(QMainWindow):
+    """
+        Main class. UI + graphics
+    """
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -62,22 +68,22 @@ class UI(QMainWindow):
 
     def start(self):  # Implement restart button with ai reloading
         self.scene.clear()
-        self.drawDots()
-        self.loadAI()
-        self.stream = Stream(self.ai)
+        self.drawDots()  # Coordinate helper
+        self.loadAI()  # Get ais from plugins
+        self.stream = Stream(self.ai)  # Main stream of events
         self.stream.start()
-        self.world = World()
+        self.world = World()  # Main container of objects
         self.world.ai = self.ai
-        self.initWorld()
+        self.initWorld()  # Init barriers, and other stuff
         self.api = API(self.scene, self.world)
         self.api.addIconsFolder('static')
         self.api.addIconsFolder('static/emblems')
-        self.initAI()
+        self.initAI()  # Create AI, place in World
 
     def initAI(self):  # Move not-gui logic to World
         for ai in self.ai:
             ai.world = World(ai, self.world)
-            ###
+            ###  # Start stats. Move to World
             self.world.stats[ai] = {
                 'speed': 20,
                 'skillpoints': 5,
@@ -88,12 +94,12 @@ class UI(QMainWindow):
             ###
             ai.world.stream = self.stream
             ai.api = self.api
-            ###
+            ###  # Init start position and graphics logic
             cont = QGraphicsPolygonItem()
             cont.setPos(randint(-250, 250), randint(-250, 250))  # Implement start areas
             ai.object = cont
             cont.ai = ai
-            ###
+            ###  # Draw light circle and color dot
             ai.pos = cont.pos()
             lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
             yl = QColor('yellow')
@@ -107,7 +113,7 @@ class UI(QMainWindow):
             em.setOffset(-10, -10)
             self.scene.addItem(cont)
             self.connect(ai, SIGNAL('moved'), self.moveAI)
-            self.stream.addEvent(ai.init)
+            self.stream.addEvent(ai.init)  # Start AI init method
 
     def initWorld(self):  # Move not-gui logic to World
         proto = QPolygonF([QPointF(0, 0), QPointF(0, 50), QPointF(50, 50), QPointF(50, 0)])
@@ -118,11 +124,11 @@ class UI(QMainWindow):
             item = self.scene.addPolygon(b)
             item.setBrush(QBrush(QColor('black')))
 
-    def moveAI(self, ai):
+    def moveAI(self, ai):  # Drow changed position
         ai.object.setPos(ai.pos)
         self.scene.update(self.scene.sceneRect())
 
-    def drawDots(self):
+    def drawDots(self):  # Helper
         tl = QPoint(-300, -300)
         br = QPoint(300, 300)
         step = 20
@@ -131,7 +137,7 @@ class UI(QMainWindow):
                 e = self.scene.addEllipse(QRectF(QPointF(x, y), QPointF(x + 0.5, y + 0.5)), QPen(QColor('#555')))
                 e.setZValue(-60)
 
-    def loadAI(self):
+    def loadAI(self):  # Load ais files
         self.loader = Loader(AI, 'ai')
         self.ai = self.loader.modules
 
