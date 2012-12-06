@@ -10,7 +10,7 @@ class Averrin(AI):
         pass
 
     def init(self):
-        print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count() - 1)], self.world.getBarriers()))
+        print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
         while True:
             self.go(randint(-300, 300), randint(-300, 300)).wait()
 
