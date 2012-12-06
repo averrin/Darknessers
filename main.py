@@ -19,7 +19,11 @@ class API(WinterAPI):
         self.__world = world
 
     def drawPoint(self, x, y, color='red', r=2):
-        return self.__scene.addEllipse(QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))), QPen(QColor(color)))
+        return self.__scene.addEllipse(
+            QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))),
+            QPen(QColor(color)),
+            QBrush(QColor(color))
+        )
 
     def drawLine(self, x, y, x1, y1, color='blue'):
         l = QGraphicsLineItem(QLineF(QPointF(x, y), QPointF(x1, y1)))
