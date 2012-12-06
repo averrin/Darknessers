@@ -8,11 +8,12 @@ from PyQt4.QtCore import *
 
 class Averrin(AI):
     def pulse(self):
-        partner = self.world.getAI()
-        if partner:
-            p = partner[0].pos
-            if QLineF(p, self.pos).length() < QLineF(self.waypoint, self.pos).length():
-                self.stop()
+        if hasattr(self, 'world'):
+            partner = self.world.getAI()
+            if partner and hasattr(partner[0], 'pos'):
+                p = partner[0].pos
+                if QLineF(p, self.pos).length() < QLineF(self.waypoint, self.pos).length():
+                    self.stop()
 
     def init(self):
         print(map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.world.getBarriers()))
