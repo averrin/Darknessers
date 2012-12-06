@@ -72,7 +72,7 @@ class World(WinterObject):
             self.__original = self
 
     def getBarriers(self):
-        return map(lambda x: [(x.at(i).x(), x.at(i).y()) for i in range(0, x.count())], self.__original.barriers)
+        return map(lambda x: [x.at(i) for i in range(0, x.count())], self.__original.barriers)
         pass  # TODO: visibility
 
     def getAI(self):

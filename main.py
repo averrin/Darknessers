@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-c
 from __future__ import print_function, unicode_literals
-import json
 import sys
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from winterstone.base import *
 from loader import Loader
 from base import AI, World, Stream, Barrier
-from winterstone.snowflake import loadIcons
 from random import randint
 
 
@@ -20,7 +18,7 @@ class API(WinterAPI):
 
     def drawPoint(self, x, y, color='red', r=2):
         return self.__scene.addEllipse(
-            QRectF(QPointF(x - (r / 2), y - (r / 2)), QPointF(x + (r / 2), y + (r / 2))),
+            QRectF(QPointF(x - r, y - r), QPointF(x + r, y + r)),
             QPen(QColor(color)),
             QBrush(QColor(color))
         )
@@ -62,7 +60,7 @@ class UI(QMainWindow):
 
         self.start()
 
-    def start(self):
+    def start(self):  # Implement restart button with ai reloading
         self.scene.clear()
         self.drawDots()
         self.loadAI()
@@ -76,9 +74,10 @@ class UI(QMainWindow):
         self.api.addIconsFolder('static/emblems')
         self.initAI()
 
-    def initAI(self):
+    def initAI(self):  # Move not-gui logic to World
         for ai in self.ai:
             ai.world = World(ai, self.world)
+            ###
             self.world.stats[ai] = {
                 'speed': 20,
                 'skillpoints': 5,
@@ -86,12 +85,15 @@ class UI(QMainWindow):
                 'ac': 10,
                 'light': 150
             }
+            ###
             ai.world.stream = self.stream
             ai.api = self.api
+            ###
             cont = QGraphicsPolygonItem()
-            cont.setPos(randint(-250, 250), randint(-250, 250))
+            cont.setPos(randint(-250, 250), randint(-250, 250))  # Implement start areas
             ai.object = cont
             cont.ai = ai
+            ###
             ai.pos = cont.pos()
             lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
             yl = QColor('yellow')
@@ -104,10 +106,10 @@ class UI(QMainWindow):
             em.setZValue(50)
             em.setOffset(-10, -10)
             self.scene.addItem(cont)
-            self.connect(ai, SIGNAL('moved'), self.moveEm)
+            self.connect(ai, SIGNAL('moved'), self.moveAI)
             self.stream.addEvent(ai.init)
 
-    def initWorld(self):
+    def initWorld(self):  # Move not-gui logic to World
         proto = QPolygonF([QPointF(0, 0), QPointF(0, 50), QPointF(50, 50), QPointF(50, 0)])
         for i in range(0, 5):
             b = Barrier(proto)
@@ -116,9 +118,8 @@ class UI(QMainWindow):
             item = self.scene.addPolygon(b)
             item.setBrush(QBrush(QColor('black')))
 
-    def moveEm(self, ai):
+    def moveAI(self, ai):
         ai.object.setPos(ai.pos)
-        # ai.object.lc.setPos(ai.pos + QPointF(ai.lightr, ai.lightr))
         self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):
