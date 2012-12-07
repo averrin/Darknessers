@@ -4,12 +4,14 @@ from base import AI
 import time
 from random import randint
 from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 
 class Averrin(AI):
     def pulse(self):
         if hasattr(self, 'world'):
             partner = self.world.getAI()
+            # return
             self.api.drawPoint(self.pos.x(), self.pos.y(), color="green")
             if partner:
                 p = partner[0]
@@ -19,13 +21,20 @@ class Averrin(AI):
 
     def init(self):
         self.waypoint = self.pos
+        # return
         while True:
             partner = self.world.getAI()
             if partner:
+                lg = QColor('lightgreen')
+                lg.setAlpha(100)
+                self.object.lc.setBrush(QBrush(lg))
                 self.waypoint = QPointF(partner[0].x(), partner[0].y())
                 self.rotateTo(self.waypoint)
                 self.go(partner[0].x(), partner[0].y()).wait()
             else:
+                yl = QColor('yellow')
+                yl.setAlpha(100)
+                self.object.lc.setBrush(QBrush(yl))
                 self.waypoint = QPointF(randint(-300, 300), randint(-300, 300))
                 self.rotateTo(self.waypoint)
                 self.go(self.waypoint.x(), self.waypoint.y()).wait()

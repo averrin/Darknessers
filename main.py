@@ -93,6 +93,7 @@ class UI(QMainWindow):
                 'hp': 50,
                 'ac': 10,
                 'light': 150,
+                'light_angle': 120,
                 'angle': 0
             }
             ###
@@ -100,14 +101,14 @@ class UI(QMainWindow):
             ai.api = self.api
             ###  # Init start position and graphics logic
             cont = QGraphicsPolygonItem()
-            cont.setPos(randint(-250, 250), randint(-250, 250))  # Implement start areas
+            cont.setPos(randint(-50, 50), randint(-50, 50))  # Implement start areas
             ai.object = cont
             cont.ai = ai
             ###  # Draw light circle and color dot
             ai.pos = cont.pos()
             lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
-            lc.setStartAngle(30 * 16)
-            lc.setSpanAngle(120 * 16)
+            lc.setStartAngle((90 - self.world.stats[ai]['light_angle'] / 2) * 16)
+            lc.setSpanAngle(self.world.stats[ai]['light_angle'] * 16)
             lc.setTransformOriginPoint(QPointF(0, 0))
             yl = QColor('yellow')
             yl.setAlpha(100)
@@ -118,6 +119,7 @@ class UI(QMainWindow):
             em = QGraphicsPixmapItem(QPixmap(self.api.icons[ai.color]), cont)
             em.setZValue(50)
             em.setOffset(-10, -10)
+            cont.em = em
             self.scene.addItem(cont)
             self.connect(ai, SIGNAL('moved'), self.moveAI)
             self.stream.addEvent(ai.init)  # Start AI init method

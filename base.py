@@ -89,9 +89,15 @@ class World(WinterObject):
         ret = []
         if hasattr(self.ai, 'pos'):
             for ai in self.__original.ai:
-                if ai is not self.ai and hasattr(ai, 'pos') and QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr + ai.lightr / 2):
-                    ret.append(ai.pos)
-        return ret  # TODO: visibility, mock object without control
+                if ai is not self.ai and hasattr(ai, 'pos'):
+                    if QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr): # + ai.lightr / 2):
+                        a = QLineF(ai.pos, self.ai.pos).angleTo(QLineF(self.ai.pos, QPointF(self.ai.pos.x(), self.ai.pos.y()+1)))
+                        _a = abs(self.ai.angle - 90)
+                        la = self.__original.stats[self.ai]['light_angle'] + self.ai.angle
+                        if a < la / 2 or a > 360 - la / 2:
+                            ret.append(ai.pos)
+                            ai.api.drawPoint(ai.pos.x(), ai.pos.y(), color="orange")
+        return ret  # TODO: visibility
 
     def moveMe(self, x, y):  # Move logic
         if isinstance(self.ai, AI):
@@ -120,6 +126,9 @@ class World(WinterObject):
             self.ai.stopMove = False
             self.ai.mover = False
             self.ai.after_go(p.x(), p.y())
+
+    def isVisible(self, point):
+        return True
 
 
 class Stream(QThread):
