@@ -14,6 +14,7 @@ class Averrin(AI):
             if partner:
                 p = partner[0]
                 if QLineF(p, self.pos).length() < QLineF(self.waypoint, self.pos).length():
+                    self.rotateTo(p)
                     self.stop()
 
     def init(self):
@@ -22,9 +23,11 @@ class Averrin(AI):
             partner = self.world.getAI()
             if partner:
                 self.waypoint = QPointF(partner[0].x(), partner[0].y())
+                self.rotateTo(self.waypoint)
                 self.go(partner[0].x(), partner[0].y()).wait()
             else:
                 self.waypoint = QPointF(randint(-300, 300), randint(-300, 300))
+                self.rotateTo(self.waypoint)
                 self.go(self.waypoint.x(), self.waypoint.y()).wait()
 
     def before_go(self, x, y):
@@ -37,6 +40,10 @@ class Averrin(AI):
 
     def collision_go(self, x, y):
         self.api.drawPoint(x, y)
+
+    def rotateTo(self, point):
+        angle = QLineF(self.pos, self.waypoint).angleTo(QLineF(QPointF(0, 100), QPointF(0, 0)))
+        self.rotate(angle)
 
 averrin = Averrin()
 averrin.color = 'violet'

@@ -35,6 +35,9 @@ class API(WinterAPI):
     def getStats(self, who, stat):  # remove who by personal apis
         return self.__world.stats[who][stat]
 
+    def rotate(self, who, angle):  # remove who by personal apis
+        self.__world.stats[who]['angle'] = angle
+
     def addStats(self, who, stat):  # remove who by personal apis
         if self.__world.stats[who]['skillpoints'] > 0:
             self.__world.stats[who]['skillpoints'] -= 1
@@ -89,7 +92,8 @@ class UI(QMainWindow):
                 'skillpoints': 5,
                 'hp': 50,
                 'ac': 10,
-                'light': 150
+                'light': 150,
+                'angle': 0
             }
             ###
             ai.world.stream = self.stream
@@ -102,6 +106,9 @@ class UI(QMainWindow):
             ###  # Draw light circle and color dot
             ai.pos = cont.pos()
             lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
+            lc.setStartAngle(30 * 16)
+            lc.setSpanAngle(120 * 16)
+            lc.setTransformOriginPoint(QPointF(0, 0))
             yl = QColor('yellow')
             yl.setAlpha(100)
             lc.setPen(QPen(yl))
@@ -126,6 +133,8 @@ class UI(QMainWindow):
 
     def moveAI(self, ai):  # Drow changed position
         ai.object.setPos(ai.pos)
+        # ai.object.lc.setTransformOriginPoint(ai.pos)
+        ai.object.lc.setRotation(ai.angle)
         self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):  # Helper

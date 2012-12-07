@@ -26,6 +26,13 @@ class AI(WinterObject, QObject):
     def lightr(self):
         return self.api.getStats(self, 'light')
 
+    @property
+    def angle(self):
+        return self.api.getStats(self, 'angle')
+
+    def rotate(self, angle):
+        self.api.rotate(self, angle)
+
     def init(self):
         pass
 
@@ -102,7 +109,6 @@ class World(WinterObject):
                 y = start.y() + (end.y() - start.y()) * t
                 p = QPointF(x, y)
                 for b in self.__original.barriers:
-                    # print(b, p, b.contains(p), b.containsPoint(p, Qt.WindingFill))
                     if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
                         self.ai.collision_go(x, y)
                         self.ai.stopMove = True
@@ -137,7 +143,6 @@ class Stream(QThread):
         ev = Event(do)
         self.pool.append(ev)
         ev.start()
-        # QThreadPool.globalInstance().start(ev)
         return ev
 
 
