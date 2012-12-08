@@ -109,6 +109,8 @@ class UI(QMainWindow):
                 'angle': 0
             }
             ###
+            if ai.color == 'orange':
+                self.world.stats[ai]['speed'] = 40
             ai.world.stream = self.stream
             ai.api = self.api
             ###  # Init start position and graphics logic
@@ -131,6 +133,8 @@ class UI(QMainWindow):
             em.setZValue(50)
             em.setOffset(-10, -10)
             cont.em = em
+            ra = QGraphicsLineItem(QLineF(QPointF(0, 40), QPointF(0, 0)), cont)
+            cont.ra = ra
             self.scene.addItem(cont)
             self.connect(ai, SIGNAL('moved'), self.moveAI)
             self.stream.addEvent(ai.init)  # Start AI init method
@@ -146,8 +150,8 @@ class UI(QMainWindow):
 
     def moveAI(self, ai):  # Drow changed position
         ai.object.setPos(ai.pos)
-        # ai.object.lc.setTransformOriginPoint(ai.pos)
         ai.object.lc.setRotation(ai.angle)
+        ai.object.ra.setRotation(ai.angle)
         self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):  # Helper

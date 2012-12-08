@@ -18,7 +18,7 @@ class AI(WinterObject, QObject):
         self.__skillpoints = 0
         self._speed = 20
         self.stopMove = False
-        self.stopRotate = False
+        self.stopRotate_flag = False
 
     @property
     def speed(self):
@@ -37,11 +37,11 @@ class AI(WinterObject, QObject):
         return self.api.getStats(self, 'pos')
 
     def rotate(self, angle):
-        self.stopRotate = True
-        if self.rotator:
-            self.rotator.wait()
-        self.stopRotate = False
-        self.rotator = self.world.stream.addEvent(lambda: self.world.rotateMe(angle))
+        if not self.rotator or self.rotator.isFinished():
+            self.rotator = self.world.stream.addEvent(lambda: self.world.rotateMe(angle), False)
+            # print('Rotate', self.rotator, self.stopRotate_flag)
+        else:
+            self.stopRotate()
         return self.rotator
 
     def init(self):
@@ -61,17 +61,24 @@ class AI(WinterObject, QObject):
 
     def go(self, x, y):
         self.before_go(x, y)
-        if not self.mover:
-            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(x, y))
-            return self.mover
+        if not self.mover or self.mover.isFinished():
+            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(x, y), False)
         else:
             self.stop()
-            return self.go(x, y)
+            # return self.go(x, y)
+        return self.mover
 
     def stop(self):
         self.stopMove = True
         if self.mover:
             self.mover.wait()
+        self.stopMove = False
+
+    def stopRotate(self):
+        self.stopRotate_flag = True
+        if self.rotator:
+            self.rotator.wait()
+        self.stopRotate_flag = False
 
 
 class Barrier(QPolygonF):
@@ -101,14 +108,9 @@ class World(WinterObject):
         if hasattr(self.ai, 'pos'):
             for ai in self.__original.ai:
                 if ai is not self.ai and hasattr(ai, 'pos'):
-                    if QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr):  # + ai.lightr / 2):
-                        if self.isVisible(ai.pos):
-#                            ai.object.em.setPixmap(QPixmap(self.ai.api.icons['green']))
-                            ret.append(ai.pos)
- #                       else:
- #                           ai.object.em.setPixmap(QPixmap(self.ai.api.icons[ai.color]))
-                     #       ai.api.drawPoint(ai.pos.x(), ai.pos.y(), color="orange")
-        return ret  # TODO: visibility
+                    if self.isVisible(ai.pos):
+                        ret.append(ai.pos)
+        return ret
 
     def moveMe(self, x, y):  # Move logic
         if isinstance(self.ai, AI):
@@ -136,22 +138,22 @@ class World(WinterObject):
                     probe = QLineF(self.ai.pos, end)
                     probe.setLength(20)
                     if not self.isVisible(probe.p2()):
+                        # self.ai.api.drawPoint(probe.p2().x(), probe.p2().y())
                         time.sleep(d)
                     self.__original.stats[self.ai]['pos'] = p
                     self.ai.emit(SIGNAL('moved'), self.ai)
-            self.ai.stopMove = False
-            self.ai.mover = False
             self.ai.after_go(p.x(), p.y())
+            self.ai.stopMove = False
+            # self.ai.mover = False
 
     def isVisible(self, point):
-        a = QLineF(point, self.ai.pos).angleTo(QLineF(self.ai.pos, QPointF(self.ai.pos.x(), self.ai.pos.y() + 1)))
-        la = self.__original.stats[self.ai]['light_angle'] + self.ai.angle
-        if a <= la / 2 or a >= 360 - la / 2:
-            #self.ai.api.drawPoint(point.x(), point.y(), color="green")
-            return True
-        else:
-            #self.ai.api.drawPoint(point.x(), point.y(), color="red")
-            return False
+        if QLineF(point, self.ai.pos).length() <= (self.ai.lightr):
+            a = QLineF(point, self.ai.pos).angleTo(QLineF(self.ai.pos, QPointF(self.ai.pos.x(), self.ai.pos.y() + 1)))
+            la = self.__original.stats[self.ai]['light_angle'] + self.ai.angle
+            if a <= la / 2 or a >= 360 - la / 2:
+                return True
+            else:
+                return False
 
     def rotateMe(self, angle):
         a = self.__original.stats[self.ai]['angle']
@@ -161,26 +163,26 @@ class World(WinterObject):
             self.__original.stats[self.ai]['angle'] = self.__original.stats[self.ai]['angle'] % 360
         a = self.__original.stats[self.ai]['angle']
         d = a - angle
-        print('Delta: %s' % d)
+        # print('Delta: %s' % d)
         dir = 1
 #        if abs(d) > 180 and angle > 180:
  #           self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
   #          d = 360 - abs(d)
         if d > 0:
             dir = -1
-        print('Current: %s' %a)
-        print('Target: %s' % angle)
-        print('Delta: %s' % d)
+        # print('Current: %s' % a)
+        # print('Target: %s' % angle)
+        # print('Delta: %s' % d)
         for i in range(1, abs(int(d))):
-            if self.ai.stopMove:
+            if self.ai.stopRotate_flag:
                 break
             self.__original.stats[self.ai]['angle'] += 1 * dir
+            time.sleep(1 / float(self.ai.speed * 10))
+            # print(self.__original.stats[self.ai]['angle'])
 
             self.ai.emit(SIGNAL('moved'), self.ai)
-            time.sleep(1 / float(self.ai.speed * 10))
-        self.ai.rotator = False
-        a = self.__original.stats[self.ai]['angle']
-        print(self.__original.stats[self.ai]['angle'] - a)
+        self.ai.stopRotate_flag = False
+        # self.ai.rotator = False
 
 
 class Stream(QThread):
@@ -195,13 +197,16 @@ class Stream(QThread):
         while not self.__stop:
             for ai in self.ai:
                 self.addEvent(ai.pulse)  # heartbeat
+            # print(len(self.pool))
+            # print(self.pool)
             for thread in self.pool:
                 if thread.isFinished():
                     self.pool.remove(thread)
             time.sleep(1 / float(self.speed))
 
-    def addEvent(self, do):
+    def addEvent(self, do, inPool=True):
         ev = Event(do)
+        # if inPool:
         self.pool.append(ev)
         ev.start()
         return ev
@@ -218,3 +223,6 @@ class Event(QThread):  # Event on separate thread
         self.do()
         # except:
             # pass
+
+    def __repr__(self):
+        return '%s - %s' % (repr(self.do), self.isFinished())
