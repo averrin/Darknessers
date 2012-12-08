@@ -14,9 +14,11 @@ class AI(WinterObject, QObject):
         WinterObject.__init__(self)
         QObject.__init__(self)
         self.mover = False
+        self.rotator = False
         self.__skillpoints = 0
         self._speed = 20
         self.stopMove = False
+        self.stopRotate = False
 
     @property
     def speed(self):
@@ -30,8 +32,17 @@ class AI(WinterObject, QObject):
     def angle(self):
         return self.api.getStats(self, 'angle')
 
+    @property
+    def pos(self):
+        return self.api.getStats(self, 'pos')
+
     def rotate(self, angle):
-        self.api.rotate(self, angle)
+        self.stopRotate = True
+        if self.rotator:
+            self.rotator.wait()
+        self.stopRotate = False
+        self.rotator = self.world.stream.addEvent(lambda: self.world.rotateMe(angle))
+        return self.rotator
 
     def init(self):
         pass
@@ -90,13 +101,13 @@ class World(WinterObject):
         if hasattr(self.ai, 'pos'):
             for ai in self.__original.ai:
                 if ai is not self.ai and hasattr(ai, 'pos'):
-                    if QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr): # + ai.lightr / 2):
-                        a = QLineF(ai.pos, self.ai.pos).angleTo(QLineF(self.ai.pos, QPointF(self.ai.pos.x(), self.ai.pos.y()+1)))
-                        _a = abs(self.ai.angle - 90)
-                        la = self.__original.stats[self.ai]['light_angle'] + self.ai.angle
-                        if a < la / 2 or a > 360 - la / 2:
+                    if QLineF(ai.pos, self.ai.pos).length() <= (self.ai.lightr):  # + ai.lightr / 2):
+                        if self.isVisible(ai.pos):
+#                            ai.object.em.setPixmap(QPixmap(self.ai.api.icons['green']))
                             ret.append(ai.pos)
-                            ai.api.drawPoint(ai.pos.x(), ai.pos.y(), color="orange")
+ #                       else:
+ #                           ai.object.em.setPixmap(QPixmap(self.ai.api.icons[ai.color]))
+                     #       ai.api.drawPoint(ai.pos.x(), ai.pos.y(), color="orange")
         return ret  # TODO: visibility
 
     def moveMe(self, x, y):  # Move logic
@@ -105,11 +116,12 @@ class World(WinterObject):
             end = QPointF(x, y)
             l = QLineF(start, end).length()
             p = QPointF(x, y)
+            d = 1 / float(self.ai.speed)
             clear = True
             for c in range(0, int(l), 3):
                 if self.ai.stopMove or not clear:
                     break
-                time.sleep(1 / float(self.ai.speed))
+                time.sleep(d)
                 t = c / l
                 x = start.x() + (end.x() - start.x()) * t
                 y = start.y() + (end.y() - start.y()) * t
@@ -121,14 +133,54 @@ class World(WinterObject):
                         clear = False
                         # break
                 if clear:
-                    self.ai.pos = QPointF(x, y)
+                    probe = QLineF(self.ai.pos, end)
+                    probe.setLength(20)
+                    if not self.isVisible(probe.p2()):
+                        time.sleep(d)
+                    self.__original.stats[self.ai]['pos'] = p
                     self.ai.emit(SIGNAL('moved'), self.ai)
             self.ai.stopMove = False
             self.ai.mover = False
             self.ai.after_go(p.x(), p.y())
 
     def isVisible(self, point):
-        return True
+        a = QLineF(point, self.ai.pos).angleTo(QLineF(self.ai.pos, QPointF(self.ai.pos.x(), self.ai.pos.y() + 1)))
+        la = self.__original.stats[self.ai]['light_angle'] + self.ai.angle
+        if a <= la / 2 or a >= 360 - la / 2:
+            #self.ai.api.drawPoint(point.x(), point.y(), color="green")
+            return True
+        else:
+            #self.ai.api.drawPoint(point.x(), point.y(), color="red")
+            return False
+
+    def rotateMe(self, angle):
+        a = self.__original.stats[self.ai]['angle']
+        if a < 0:
+            self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
+        if a > 360:
+            self.__original.stats[self.ai]['angle'] = self.__original.stats[self.ai]['angle'] % 360
+        a = self.__original.stats[self.ai]['angle']
+        d = a - angle
+        print('Delta: %s' % d)
+        dir = 1
+#        if abs(d) > 180 and angle > 180:
+ #           self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
+  #          d = 360 - abs(d)
+        if d > 0:
+            dir = -1
+        print('Current: %s' %a)
+        print('Target: %s' % angle)
+        print('Delta: %s' % d)
+        for i in range(1, abs(int(d))):
+            if self.ai.stopMove:
+                break
+            self.__original.stats[self.ai]['angle'] += 1 * dir
+
+            self.ai.emit(SIGNAL('moved'), self.ai)
+            time.sleep(1 / float(self.ai.speed * 10))
+        self.ai.rotator = False
+        a = self.__original.stats[self.ai]['angle']
+        print(self.__original.stats[self.ai]['angle'] - a)
 
 
 class Stream(QThread):

@@ -18,25 +18,36 @@ class API(WinterAPI):
         WinterAPI.__init__(self)
         self.__scene = scene
         self.__world = world
+        self.points = []
+        self.pi = QGraphicsPolygonItem(scene=self.__scene)
 
     def drawPoint(self, x, y, color='red', r=2):
-        return self.__scene.addEllipse(
-            QRectF(QPointF(x - r, y - r), QPointF(x + r, y + r)),
-            QPen(QColor(color)),
-            QBrush(QColor(color))
+        # print(len(self.points))
+        #if len(self.points) >= 50:
+            # self.points[0].hide()
+            # self.__scene.removeItem(self.points[0])
+            #odd = self.points[0:len(self.points) - 50]
+            #for p in odd:
+                #p.hide()
+                #self.points.remove(p)
+                #self.__scene.removeItem(p)
+        e = QGraphicsEllipseItem(
+            QRectF(QPointF(x - r, y - r), QPointF(x + r, y + r)), parent=self.pi, scene=self.__scene
         )
+        e.setPen(QPen(QColor(color)))
+        e.setBrush(QBrush(QColor(color)))
+        # self.__scene.addItem(e)
+        self.points.append(e)
+        return e
 
     def drawLine(self, x, y, x1, y1, color='blue'):
-        l = QGraphicsLineItem(QLineF(QPointF(x, y), QPointF(x1, y1)))
+        l = QGraphicsLineItem(QLineF(QPointF(x, y), QPointF(x1, y1)), parent=self.pi, scene=self.__scene)
         l.setPen(QPen(QColor(color)))
-        self.__scene.addItem(l)
+#        self.__scene.addItem(l)
         return l
 
     def getStats(self, who, stat):  # remove who by personal apis
         return self.__world.stats[who][stat]
-
-    def rotate(self, who, angle):  # remove who by personal apis
-        self.__world.stats[who]['angle'] = angle
 
     def addStats(self, who, stat):  # remove who by personal apis
         if self.__world.stats[who]['skillpoints'] > 0:
@@ -88,6 +99,7 @@ class UI(QMainWindow):
             ai.world = World(ai, self.world)
             ###  # Start stats. Move to World
             self.world.stats[ai] = {
+                'pos': QPointF(randint(-50, 50), randint(-50, 50)),
                 'speed': 20,
                 'skillpoints': 5,
                 'hp': 50,
@@ -101,11 +113,10 @@ class UI(QMainWindow):
             ai.api = self.api
             ###  # Init start position and graphics logic
             cont = QGraphicsPolygonItem()
-            cont.setPos(randint(-50, 50), randint(-50, 50))  # Implement start areas
+            cont.setPos(self.world.stats[ai]['pos'])  # Implement start areas
             ai.object = cont
             cont.ai = ai
             ###  # Draw light circle and color dot
-            ai.pos = cont.pos()
             lc = QGraphicsEllipseItem(QRectF(QPointF(-ai.lightr, -ai.lightr), QSizeF(ai.lightr * 2, ai.lightr * 2)), cont)
             lc.setStartAngle((90 - self.world.stats[ai]['light_angle'] / 2) * 16)
             lc.setSpanAngle(self.world.stats[ai]['light_angle'] * 16)
