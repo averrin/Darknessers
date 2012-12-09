@@ -6,6 +6,8 @@ from random import randint
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+# raise
+
 
 class Mode(object):
     def __init__(self, ai):
@@ -27,38 +29,52 @@ class FreeMode(Mode):
         color.setAlpha(100)
         self.ai.object.lc.setBrush(QBrush(color))
         print('Im free!')
-        p = QPointF(randint(-300, 300), randint(-300, 300))
-        self.ai.goto(p)
+        self.ai.registerCallback(self.ai.moved_callback, self.gotoRand)
+        self.ai.registerCallback(self.ai.collision_callback, self.gotoRand)
+        self.ai.moved_callback.emit()
 
     def onPulse(self):
-        targets = self.ai.world.getAI()
-        if targets:
-            self.ai.changeMode('stalker')
-        elif self.ai.mover and self.ai.mover.isFinished():
-            p = QPointF(randint(-300, 300), randint(-300, 300))
-            self.ai.goto(p)
+        pass
+
+    def gotoRand(self):
+        print('Moved callback')
+        p = QPointF(randint(-300, 300), randint(-300, 300))
+        self.ai.rotateTo(p)
+        self.ai.go(p.x(), p.y())
 
 
 class StalkerMode(Mode):
     def activate(self):
         self.hist = ['', '']
-        color = QColor('green')
+        color = QColor('red')
         color.setAlpha(100)
         self.ai.object.lc.setBrush(QBrush(color))
         print('Stalker!!!')
+        self.ai.registerCallback(self.ai.moved_callback, self.gotoRand)
+        self.ai.registerCallback(self.ai.collision_callback, self.gotoRand)
+        # self.ai.collision_callback.connect(self.gotoRand)
+        # self.ai.moved_callback.connect(self.gotoRand)
+        time.sleep((1 / self.ai.speed) * 40)
         self.ai.stop()
+        # print(self.ai.receivers(SIGNAL('moved_callback')))
+        self.ai.moved_callback.emit()
 
     def onPulse(self):
+        return
         # if self.ai.mover and self.ai.mover.isFinished():
         targets = self.ai.world.getAI()
-        if not targets:
+        if not targets and hasattr(self, 'hist'):
             pass
-            if len(self.hist) == 2:
+            if self.hist[0] and self.hist[1]:
                 predct = QLineF(self.hist[0], self.hist[1])
                 predct.setLength(30)
                 target = predct.p2()
+                # if target != self.ai.pos:
+                # print(self.ai.pos, target)
                 self.ai.goto(target)
-                time.sleep((1 / self.ai.speed) * 20)
+                time.sleep((1 / self.ai.speed) * 10)
+                # else:
+                #     self.ai.changeMode('free')
                 # self.ai.stop()
             else:
                 self.ai.changeMode('free')
@@ -73,13 +89,14 @@ class StalkerMode(Mode):
                 target = targets[0]
                 self.hist[1] = targets[0]
             if self.ai.mover.isFinished():
-                # self.ai.stop()
-                # self.ai.mover.wait()
                 self.ai.goto(target)
-                time.sleep((1 / self.ai.speed) * 20)
-                # self.ai.stop()
+                time.sleep((1 / self.ai.speed) * 10)
 
-
+    def gotoRand(self):
+        print('Stalker Moved callback')
+        p = QPointF(randint(-300, 300), randint(-300, 300))
+        self.ai.rotateTo(p)
+        self.ai.go(p.x(), p.y())
 
 
 class Averrin(AI):
@@ -90,12 +107,17 @@ class Averrin(AI):
         self.modes = {'free': FreeMode(self), 'stalker': StalkerMode(self)}
         self.mode = False
         self.ready = False
+        # self.registerCallback(self.moved_callback, self.modes['free'].gotoRand)
+        # self.registerCallback(self.collision_callback, self.modes['free'].gotoRand)
 
     def changeMode(self, mode_name):
         if self.mode:
             self.mode.deactivate()
         self.mode = self.modes[mode_name]
         print('Activate "%s" mode' % mode_name)
+        # self.moved_callback = self.modes[mode_name].gotoRand
+        # self.registerCallback(self.moved_callback, self.modes[mode_name].gotoRand)
+        # self.registerCallback(self.collision_callback, self.modes[mode_name].gotoRand)
         self.mode.activate()
 
     def pulse(self):
@@ -105,25 +127,17 @@ class Averrin(AI):
     def init(self):
         self.ready = True
         self.changeMode('free')
+        self.changeMode('stalker')
+        self.changeMode('free')
 
     def goto(self, target):
         self.waypoint = target
-        self.stopRotate()
-        # g.wait()
         self.rotateTo(self.waypoint)
-        self.go(self.waypoint.x(), self.waypoint.y()).wait()
-        self.rotator.wait()
+        self.go(self.waypoint.x(), self.waypoint.y())
 
     def before_go(self, x, y):
         self.target = self.api.drawPoint(x, y)
         # self.path = self.api.drawLine(self.pos.x(), self.pos.y(), x, y)
-
-    def after_go(self, x, y):
-        self.target.hide()
-        # self.path.hide()
-
-    def collision_go(self, x, y):
-        self.api.drawPoint(x, y)
 
     def rotateTo(self, point):
         angle = QLineF(self.pos, point).angleTo(QLineF(QPointF(self.pos.x(), self.pos.y() + 1), self.pos))

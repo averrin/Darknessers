@@ -85,8 +85,8 @@ class UI(QMainWindow):
         self.drawDots()  # Coordinate helper
         self.loadAI()  # Get ais from plugins
         self.stream = Stream(self.ai)  # Main stream of events
+        self.world = World(stream=self.stream)  # Main container of objects
         self.stream.start()
-        self.world = World()  # Main container of objects
         self.world.ai = self.ai
         self.initWorld()  # Init barriers, and other stuff
         self.api = API(self.scene, self.world)  # TODO: remove singleton, make personal apis
@@ -105,7 +105,7 @@ class UI(QMainWindow):
                 'hp': 50,
                 'ac': 10,
                 'light': 150,
-                'light_angle': 120,
+                'light_angle': 90,
                 'angle': 0
             }
             ###
@@ -133,8 +133,8 @@ class UI(QMainWindow):
             em.setZValue(50)
             em.setOffset(-10, -10)
             cont.em = em
-            ra = QGraphicsLineItem(QLineF(QPointF(0, 40), QPointF(0, 0)), cont)
-            cont.ra = ra
+            # ra = QGraphicsLineItem(QLineF(QPointF(0, 40), QPointF(0, 0)), cont)
+            # cont.ra = ra
             self.scene.addItem(cont)
             self.connect(ai, SIGNAL('moved'), self.moveAI)
             self.stream.addEvent(ai.init)  # Start AI init method
@@ -151,7 +151,7 @@ class UI(QMainWindow):
     def moveAI(self, ai):  # Drow changed position
         ai.object.setPos(ai.pos)
         ai.object.lc.setRotation(ai.angle)
-        ai.object.ra.setRotation(ai.angle)
+        # ai.object.ra.setRotation(ai.angle)
         self.scene.update(self.scene.sceneRect())
 
     def drawDots(self):  # Helper
@@ -173,6 +173,8 @@ def main():
     win = UI()
     win.show()
     qtapp.exec_()
+    win.stream.stop()
+    win.stream.wait()
 
 
 if __name__ == '__main__':

@@ -10,15 +10,37 @@ class AI(WinterObject, QObject):
         Base class for ai
     """
 
+    moved_callback = pyqtSignal(name="moved_callback")
+    collision_callback = pyqtSignal(name="collision_callback")
+
     def __init__(self):
         WinterObject.__init__(self)
-        QObject.__init__(self)
         self.mover = False
         self.rotator = False
         self.__skillpoints = 0
         self._speed = 20
         self.stopMove = False
         self.stopRotate_flag = False
+        self.callbacks = {}
+
+        QObject.__init__(self)
+
+    def registerCallback(self, signal, callback):  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # print(signal, callback, signal in self.callbacks.keys())
+        # if signal in self.callbacks:
+        #     print('!!!!!!!!!!!!!!!!')
+        # try:
+        #     signal.disconnect()
+        # except Exception as e:
+        #     print(e)
+        # print(dir(signal), signal.signal)
+        if signal.signal in self.callbacks:
+            signal.disconnect(self.callbacks[signal.signal])
+        self.callbacks[signal.signal] = callback
+        signal.connect(callback)
+        # print(self.callbacks)
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     @property
     def speed(self):
@@ -37,12 +59,7 @@ class AI(WinterObject, QObject):
         return self.api.getStats(self, 'pos')
 
     def rotate(self, angle):
-        if not self.rotator or self.rotator.isFinished():
-            self.rotator = self.world.stream.addEvent(lambda: self.world.rotateMe(angle), False)
-            # print('Rotate', self.rotator, self.stopRotate_flag)
-        else:
-            self.stopRotate()
-        return self.rotator
+        self.emit(SIGNAL('rotate'), angle)
 
     def init(self):
         pass
@@ -53,7 +70,7 @@ class AI(WinterObject, QObject):
     def before_go(self, x, y):
         pass
 
-    def after_go(self, x, y):
+    def after_go(self):
         pass
 
     def collision_go(self, x, y):
@@ -61,24 +78,13 @@ class AI(WinterObject, QObject):
 
     def go(self, x, y):
         self.before_go(x, y)
-        if not self.mover or self.mover.isFinished():
-            self.mover = self.world.stream.addEvent(lambda: self.world.moveMe(x, y), False)
-        else:
-            self.stop()
-            # return self.go(x, y)
-        return self.mover
+        self.emit(SIGNAL('goto'), x, y)
 
     def stop(self):
         self.stopMove = True
-        if self.mover:
-            self.mover.wait()
-        self.stopMove = False
 
     def stopRotate(self):
         self.stopRotate_flag = True
-        if self.rotator:
-            self.rotator.wait()
-        self.stopRotate_flag = False
 
 
 class Barrier(QPolygonF):
@@ -86,11 +92,14 @@ class Barrier(QPolygonF):
 
 
 class World(WinterObject):
-    def __init__(self, ai='', original=''):
+    def __init__(self, ai='', original='', stream=''):
         WinterObject.__init__(self)
         if ai:  # Personal world
             self.ai = ai
+            ai.connect(ai, SIGNAL('goto'), self.startMove)
+            ai.connect(ai, SIGNAL('rotate'), self.startRotate)
             self.__original = original
+            QObject.connect(self.__original.stream.emmiter, SIGNAL('addEvent'), self.addEvent)
             print('Generate world for %s' % ai)
         else:  # Global world
             print('Generate global world')
@@ -98,6 +107,15 @@ class World(WinterObject):
             self.ai = []
             self.barriers = []
             self.__original = self
+            self.stream = stream
+
+    def startMove(self, x, y):
+        if not self.ai.mover or self.ai.mover.isFinished():
+            self.ai.mover = self.addEvent(lambda: self.moveMe(x, y))
+
+    def startRotate(self, angle):
+        if not self.ai.rotator or self.ai.rotator.isFinished():
+            self.ai.rotator = self.addEvent(lambda: self.rotateMe(angle))
 
     def getBarriers(self):  # Visible barriers
         return map(lambda x: [x.at(i) for i in range(0, x.count())], self.__original.barriers)
@@ -121,30 +139,34 @@ class World(WinterObject):
             d = 1 / float(self.ai.speed)
             clear = True
             for c in range(0, int(l), 3):
-                if self.ai.stopMove or not clear:
-                    break
-                time.sleep(d)
-                t = c / l
-                x = start.x() + (end.x() - start.x()) * t
-                y = start.y() + (end.y() - start.y()) * t
-                p = QPointF(x, y)
-                for b in self.__original.barriers:
-                    if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
-                        self.ai.collision_go(x, y)
-                        self.ai.stopMove = True
-                        clear = False
-                        # break
-                if clear:
-                    probe = QLineF(self.ai.pos, end)
-                    probe.setLength(20)
-                    if not self.isVisible(probe.p2()):
-                        # self.ai.api.drawPoint(probe.p2().x(), probe.p2().y())
-                        time.sleep(d)
-                    self.__original.stats[self.ai]['pos'] = p
-                    self.ai.emit(SIGNAL('moved'), self.ai)
-            self.ai.after_go(p.x(), p.y())
-            self.ai.stopMove = False
-            # self.ai.mover = False
+                if not self.ai.stopMove:
+                    time.sleep(d)
+                    t = c / l
+                    x = start.x() + (end.x() - start.x()) * t
+                    y = start.y() + (end.y() - start.y()) * t
+                    p = QPointF(x, y)
+                    for b in self.__original.barriers:
+                        if b.containsPoint(p, Qt.OddEvenFill | Qt.WindingFill):
+                            self.ai.stopMove = True
+                            clear = False
+                            # break
+                    if clear:
+                        probe = QLineF(self.ai.pos, end)
+                        probe.setLength(20)
+                        if not self.isVisible(probe.p2()):
+                            time.sleep(d)
+                        self.__original.stats[self.ai]['pos'] = p
+                        self.ai.emit(SIGNAL('moved'), self.ai)
+
+            if not self.ai.stopMove:
+                self.ai.stopMove = False
+                if self.ai.color == 'violet':
+                    print('Before moved callback for %s' % self.ai)
+                self.ai.moved_callback.emit()
+                # self.ai.emit(SIGNAL('moved_callback'))
+            elif not clear:
+                self.ai.stopMove = False
+                self.ai.collision_callback.emit()
 
     def isVisible(self, point):
         if QLineF(point, self.ai.pos).length() <= (self.ai.lightr):
@@ -154,35 +176,35 @@ class World(WinterObject):
                 return True
             else:
                 return False
+                self.ai.api.drawPoint(point.x(), point.y())
 
     def rotateMe(self, angle):
-        a = self.__original.stats[self.ai]['angle']
-        if a < 0:
-            self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
-        if a > 360:
-            self.__original.stats[self.ai]['angle'] = self.__original.stats[self.ai]['angle'] % 360
-        a = self.__original.stats[self.ai]['angle']
-        d = a - angle
-        # print('Delta: %s' % d)
-        dir = 1
-#        if abs(d) > 180 and angle > 180:
- #           self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
-  #          d = 360 - abs(d)
-        if d > 0:
-            dir = -1
-        # print('Current: %s' % a)
-        # print('Target: %s' % angle)
-        # print('Delta: %s' % d)
-        for i in range(1, abs(int(d))):
-            if self.ai.stopRotate_flag:
-                break
-            self.__original.stats[self.ai]['angle'] += 1 * dir
-            time.sleep(1 / float(self.ai.speed * 10))
-            # print(self.__original.stats[self.ai]['angle'])
+        if isinstance(self.ai, AI):
+            a = self.__original.stats[self.ai]['angle']
+            if a < 0:
+                self.__original.stats[self.ai]['angle'] = 360 + self.__original.stats[self.ai]['angle']
+            if a > 360:
+                self.__original.stats[self.ai]['angle'] = self.__original.stats[self.ai]['angle'] % 360
+            a = self.__original.stats[self.ai]['angle']
+            d = a - angle
+            dir = 1
 
-            self.ai.emit(SIGNAL('moved'), self.ai)
-        self.ai.stopRotate_flag = False
-        # self.ai.rotator = False
+            if d > 0:
+                dir = -1
+
+            for i in range(1, abs(int(d))):
+                if not self.ai.stopRotate_flag:
+                    self.__original.stats[self.ai]['angle'] += 1 * dir
+                    time.sleep(1 / float(self.ai.speed * 10))
+
+                    self.ai.emit(SIGNAL('moved'), self.ai)
+            self.ai.stopRotate_flag = False
+
+    def addEvent(self, do):
+        ev = Event(do)
+        self.stream.pool.append(ev)
+        ev.start()
+        return ev
 
 
 class Stream(QThread):
@@ -191,7 +213,8 @@ class Stream(QThread):
         self.__stop = False
         self.ai = ai
         self.pool = []
-        self.speed = 40
+        self.speed = 2
+        self.emmiter = QObject()
 
     def run(self):
         while not self.__stop:
@@ -205,11 +228,10 @@ class Stream(QThread):
             time.sleep(1 / float(self.speed))
 
     def addEvent(self, do, inPool=True):
-        ev = Event(do)
-        # if inPool:
-        self.pool.append(ev)
-        ev.start()
-        return ev
+        self.emmiter.emit(SIGNAL('addEvent'), do)
+
+    def stop(self):
+        self.__stop = True
 
 
 class Event(QThread):  # Event on separate thread

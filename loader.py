@@ -43,7 +43,7 @@ class Loader(object):
     def load_module(self, name):
         """Return a named module found in a given path."""
         (file, pathname, description) = imp.find_module(name, [self.path])
-        try:
-            return imp.load_module(name, file, pathname, description)
-        except:
-            pass
+        # try:
+        return imp.load_module(name, file, pathname, description)
+        # except:
+        #     pass
