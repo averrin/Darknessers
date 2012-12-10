@@ -66,12 +66,7 @@ class StalkerMode(Mode):
         if not targets and hasattr(self, 'hist'):
             pass
             if self.hist[0] and self.hist[1]:
-                predct = QLineF(self.hist[0], self.hist[1])
-                predct.setLength(30)
-                target = predct.p2()
-                # if target != self.ai.pos:
-                # print(self.ai.pos, target)
-                self.ai.goto(target)
+                self.ai.goto(self.predictTarget())
                 time.sleep((1 / self.ai.speed) * 10)
                 # else:
                 #     self.ai.changeMode('free')
@@ -91,6 +86,12 @@ class StalkerMode(Mode):
             if self.ai.mover.isFinished():
                 self.ai.goto(target)
                 time.sleep((1 / self.ai.speed) * 10)
+
+    def predictTarget(self, length=30):
+        predct = QLineF(self.hist[0], self.hist[1])
+        predct.setLength(length)
+        target = predct.p2()
+        return target
 
     def gotoTarget(self):
         p = self.ai.waypoint
@@ -133,9 +134,8 @@ class Averrin(AI):
         self.changeMode('free')
 
     def goto(self, target):
-        self.waypoint = target
-        self.rotateTo(self.waypoint)
-        self.go(self.waypoint.x(), self.waypoint.y())
+        self.rotateTo(target)
+        self.go(target.x(), target.y())
 
     def before_go(self, x, y):
         self.target = self.api.drawPoint(x, y)

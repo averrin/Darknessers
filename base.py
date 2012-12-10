@@ -36,7 +36,6 @@ class AI(WinterObject, QObject):
             self.signals[signal].connect(callback)
         self.callbacks[signal] = callback
 
-
     @property
     def speed(self):
         return self.api.getStats(self, 'speed')
