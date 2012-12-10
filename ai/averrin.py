@@ -59,33 +59,15 @@ class StalkerMode(Mode):
     def onPulse(self):
         # return
         # if self.ai.mover and self.ai.mover.isFinished():
-        targets = self.ai.world.getAI()
-        if targets:
-            self.ai.waypoint = targets[0]
-        return
-        if not targets and hasattr(self, 'hist'):
-            pass
-            if self.hist[0] and self.hist[1]:
-                self.ai.goto(self.predictTarget())
-                time.sleep((1 / self.ai.speed) * 10)
-                # else:
-                #     self.ai.changeMode('free')
-                # self.ai.stop()
+        if hasattr(self, 'hist'):
+            targets = self.ai.world.getAI()
+            if targets:
+                self.ai.waypoint = targets[0]
+                if self.hist[1]:
+                    self.hist[0] = self.hist[1]
+                self.hist[1] = self.ai.waypoint
             else:
-                self.ai.changeMode('free')
-        else:
-            if self.hist[1]:
-                predct = QLineF(self.hist[1], targets[0])
-                predct.setLength(30)
-                self.hist[0] = self.hist[1]
-                self.hist[1] = targets[0]
-                target = predct.p2()
-            else:
-                target = targets[0]
-                self.hist[1] = targets[0]
-            if self.ai.mover.isFinished():
-                self.ai.goto(target)
-                time.sleep((1 / self.ai.speed) * 10)
+                self.ai.waypoint = False
 
     def predictTarget(self, length=30):
         predct = QLineF(self.hist[0], self.hist[1])
@@ -95,6 +77,8 @@ class StalkerMode(Mode):
 
     def gotoTarget(self):
         p = self.ai.waypoint
+        if not p:
+            p = self.predictTarget()
         self.ai.rotateTo(p)
         self.ai.go(p.x(), p.y())
 
@@ -112,17 +96,12 @@ class Averrin(AI):
         self.modes = {'free': FreeMode(self), 'stalker': StalkerMode(self)}
         self.mode = False
         self.ready = False
-        # self.registerCallback(self.moved_callback, self.modes['free'].gotoRand)
-        # self.registerCallback(self.collision_callback, self.modes['free'].gotoRand)
 
     def changeMode(self, mode_name):
         if self.mode:
             self.mode.deactivate()
         self.mode = self.modes[mode_name]
         print('Activate "%s" mode' % mode_name)
-        # self.moved_callback = self.modes[mode_name].gotoRand
-        # self.registerCallback(self.moved_callback, self.modes[mode_name].gotoRand)
-        # self.registerCallback(self.collision_callback, self.modes[mode_name].gotoRand)
         self.mode.activate()
 
     def pulse(self):
