@@ -29,15 +29,17 @@ class FreeMode(Mode):
         color.setAlpha(100)
         self.ai.object.lc.setBrush(QBrush(color))
         print('Im free!')
-        self.ai.registerCallback(self.ai.moved_callback, self.gotoRand)
-        self.ai.registerCallback(self.ai.collision_callback, self.gotoRand)
+        self.ai.registerCallback('moved_callback', self.gotoRand)
+        self.ai.registerCallback('collision_callback', self.gotoRand)
         self.ai.moved_callback.emit()
 
     def onPulse(self):
-        pass
+        targets = self.ai.world.getAI()
+        if targets:
+            self.ai.waypoint = targets[0]
+            self.ai.changeMode('stalker')
 
     def gotoRand(self):
-        print('Moved callback')
         p = QPointF(randint(-300, 300), randint(-300, 300))
         self.ai.rotateTo(p)
         self.ai.go(p.x(), p.y())
@@ -50,19 +52,17 @@ class StalkerMode(Mode):
         color.setAlpha(100)
         self.ai.object.lc.setBrush(QBrush(color))
         print('Stalker!!!')
-        self.ai.registerCallback(self.ai.moved_callback, self.gotoRand)
-        self.ai.registerCallback(self.ai.collision_callback, self.gotoRand)
-        # self.ai.collision_callback.connect(self.gotoRand)
-        # self.ai.moved_callback.connect(self.gotoRand)
-        time.sleep((1 / self.ai.speed) * 40)
-        self.ai.stop()
-        # print(self.ai.receivers(SIGNAL('moved_callback')))
-        self.ai.moved_callback.emit()
+        self.ai.registerCallback('moved_callback', self.gotoTarget)
+        self.ai.registerCallback('collision_callback', self.gotoTarget)
+        self.gotoTarget()
 
     def onPulse(self):
-        return
+        # return
         # if self.ai.mover and self.ai.mover.isFinished():
         targets = self.ai.world.getAI()
+        if targets:
+            self.ai.waypoint = targets[0]
+        return
         if not targets and hasattr(self, 'hist'):
             pass
             if self.hist[0] and self.hist[1]:
@@ -92,8 +92,12 @@ class StalkerMode(Mode):
                 self.ai.goto(target)
                 time.sleep((1 / self.ai.speed) * 10)
 
+    def gotoTarget(self):
+        p = self.ai.waypoint
+        self.ai.rotateTo(p)
+        self.ai.go(p.x(), p.y())
+
     def gotoRand(self):
-        print('Stalker Moved callback')
         p = QPointF(randint(-300, 300), randint(-300, 300))
         self.ai.rotateTo(p)
         self.ai.go(p.x(), p.y())
@@ -126,8 +130,6 @@ class Averrin(AI):
 
     def init(self):
         self.ready = True
-        self.changeMode('free')
-        self.changeMode('stalker')
         self.changeMode('free')
 
     def goto(self, target):

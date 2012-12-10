@@ -8,8 +8,8 @@ from PyQt4.QtCore import *
 class Target(AI):
     def __init__(self, *args, **kwargs):
         AI.__init__(self, *args, **kwargs)
-        self.registerCallback(self.moved_callback, self.gotoRand)
-        self.registerCallback(self.collision_callback, self.gotoRand)
+        self.registerCallback('moved_callback', self.gotoRand)
+        self.registerCallback('collision_callback', self.gotoRand)
         self.init = self.gotoRand
 
     def pulse(self):
@@ -23,6 +23,8 @@ class Target(AI):
     def rotateTo(self, point):
         angle = QLineF(self.pos, point).angleTo(QLineF(QPointF(self.pos.x(), self.pos.y() + 1), self.pos))
         return self.rotate(angle)
+
+
 
 target = Target()
 target.color = 'orange'

@@ -24,23 +24,18 @@ class AI(WinterObject, QObject):
         self.callbacks = {}
 
         QObject.__init__(self)
+        self.signals = {'moved_callback': self.moved_callback, 'collision_callback': self.collision_callback}
+        for s in self.signals:
+            self.signals[s].connect(lambda: self.callbackManager(s))
 
-    def registerCallback(self, signal, callback):  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # print(signal, callback, signal in self.callbacks.keys())
-        # if signal in self.callbacks:
-        #     print('!!!!!!!!!!!!!!!!')
-        # try:
-        #     signal.disconnect()
-        # except Exception as e:
-        #     print(e)
-        # print(dir(signal), signal.signal)
-        if signal.signal in self.callbacks:
-            signal.disconnect(self.callbacks[signal.signal])
-        self.callbacks[signal.signal] = callback
-        signal.connect(callback)
-        # print(self.callbacks)
+    def callbackManager(self, signal):
+        self.callbacks[signal]()
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def registerCallback(self, signal, callback):
+        if not signal in self.callbacks:
+            self.signals[signal].connect(callback)
+        self.callbacks[signal] = callback
+
 
     @property
     def speed(self):
@@ -160,8 +155,6 @@ class World(WinterObject):
 
             if not self.ai.stopMove:
                 self.ai.stopMove = False
-                if self.ai.color == 'violet':
-                    print('Before moved callback for %s' % self.ai)
                 self.ai.moved_callback.emit()
                 # self.ai.emit(SIGNAL('moved_callback'))
             elif not clear:
